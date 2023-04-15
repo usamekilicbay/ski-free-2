@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public enum GremlinBehaviourState
+{
+    ReadyToChase,
+    Chase,
+    Disappear,
+}
+
 public class Gremlin : MonoBehaviour
 {
     [SerializeField] private float _speed;
@@ -21,30 +28,22 @@ public class Gremlin : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (Skier.IsDead)
+            gameObject.SetActive(false);
+
         var dir = Vector3.Normalize(_PlayerTransform.position - transform.position);
 
         var velocity = dir * _speed;
 
-        _rb.velocity = velocity + CursorTracker.Velocity;
+        _rb.velocity = velocity + WorldDriver.Velocity;
     }
 
     public void Chase()
     {
-        var spawnPos = _PlayerTransform.position + new Vector3(-5f, 2f);
+        var rangeX = Random.Range(-5f, 5f);
+        var spawnPos = _PlayerTransform.position + new Vector3(rangeX, 4f);
         transform.position = spawnPos;
 
         gameObject.SetActive(true);
-
-        //transform.position = new Vector2
-        //{
-        //    x = playerRb.position.x - 5f,
-        //    y = playerRb.position.y + 2f
-        //};
-
-        //var dir = Vector3.Normalize(playerRb.position - _rb.position);
-
-        //var velocity = dir * _speed;
-
-        //_rb.velocity = velocity;
     }
 }
