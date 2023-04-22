@@ -1,78 +1,102 @@
+using DG.Tweening;
+using SkiFree2.Abstracts;
+using SkiFree2.Cursor;
+using System;
 using System.Collections;
-using TMPro;
 using UnityEngine;
 
-public class Skier : MonoBehaviour
+namespace SkiFree2
 {
-    [SerializeField] private TextMeshProUGUI speedText;
-
-    private Transform skierArtTransform;
-
-    private BoxCollider2D _boxCollider;
-
-    public const float StumbleTimeRate = 1.2f;
-    public const float BoostTimeRate = 1f;
-
-    public static bool IsStumbled;
-    public static bool IsBoosted;
-    public static bool IsDead;
-
-    private void Awake()
+    public class Skier : MonoBehaviour, IKillable, IBoostable
     {
-        _boxCollider = GetComponent<BoxCollider2D>();
-        skierArtTransform = transform.GetChild(0);
-    }
+        private BoxCollider2D _boxCollider;
+        private Transform _skierArtTransform;
 
-    private void Update()
-    {
-        if (IsDead && Input.GetMouseButtonDown(0))
-            IsDead = false;
+        private readonly WaitForSeconds _stumbleWait = new(StumbleTimeRate);
+        private readonly WaitForSeconds _boostWait = new(BoostTimeRate);
 
-        LookAtCursor();
-    }
+        public const float StumbleTimeRate = 1.2f;
+        public const float BoostTimeRate = 3f;
 
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        var layer = collision.gameObject.layer;
+        public static float SpeedModifier { get; private set; }
 
-        switch (layer)
+        public event Action OnDeath;
+
+        private void Awake()
         {
-            case 7:
-                IsStumbled = true;
-                StartCoroutine(EndStumbling());
-                break;
-            case 8:
-                _boxCollider.enabled = false;
-                IsBoosted = true;
-                StartCoroutine(EndBoosting());
-                break;
-            case 9:
-                IsDead = true;
-                break;
+            _boxCollider = GetComponent<BoxCollider2D>();
+            _skierArtTransform = transform.GetChild(0);
         }
-    }
 
-    private void LookAtCursor()
-    {
-        float angle = Mathf.Atan2(CursorTracker.Direction.y, CursorTracker.Direction.x) * Mathf.Rad2Deg;
+        private void Update()
+        {
+            LookAtCursor();
+        }
 
-        Quaternion rotation = Quaternion.AngleAxis(angle + 90f, Vector3.forward);
+        private void OnTriggerEnter2D(Collider2D collision)
+        {
+            var layer = collision.gameObject.layer;
 
-        skierArtTransform.rotation = rotation;
-    }
+            switch (layer)
+            {
+                case 7:
+                    SpeedModifier = 0f;
+                    StartCoroutine(EndStumbling());
+                    break;
+                case 8:
+                    //_boxCollider.enabled = false;
+                    //SpeedModifier = 2f;
+                    //StartCoroutine(EndBoosting());
+                    break;
+            }
+        }
 
-    private IEnumerator EndBoosting()
-    {
-        yield return new WaitForSeconds(BoostTimeRate);
+        private void LookAtCursor()
+        {
+            float angle = Mathf.Atan2(CursorTracker.Direction.y, CursorTracker.Direction.x) * Mathf.Rad2Deg;
 
-        _boxCollider.enabled = true;
-        IsBoosted = false;
-    }
+            Quaternion rotation = Quaternion.AngleAxis(angle + 90f, Vector3.forward);
 
-    private IEnumerator EndStumbling()
-    {
-        yield return new WaitForSeconds(BoostTimeRate);
+            _skierArtTransform.rotation = rotation;
+        }
 
-        IsStumbled = false;
+        private IEnumerator EndStumbling()
+        {
+            yield return _stumbleWait;
+
+            SpeedModifier = 1f;
+        }
+
+        //private IEnumerator EndBoosting()
+        private void EndBoosting()
+        {
+            //yield return _boostWait;
+
+            SpeedModifier = 1f;
+            _boxCollider.enabled = true;
+        }
+
+        public void Boost(float boostedSpeed)
+        {
+            _boxCollider.enabled = false;
+            SpeedModifier = boostedSpeed;
+
+            var seq = DOTween.Sequence();
+            seq.Append(_skierArtTransform.DOScale(2f, 0.5f));
+            seq.SetEase(Ease.Linear);
+            seq.Append(_skierArtTransform.DOScale(1f, BoostTimeRate - 0.5f));
+            seq.OnComplete(EndBoosting);
+        }
+
+        public void ResetGame()
+        {
+            SpeedModifier = 1f;
+        }
+
+        public void Kill()
+        {
+            SpeedModifier = 0f;
+            OnDeath?.Invoke();
+        }
     }
 }

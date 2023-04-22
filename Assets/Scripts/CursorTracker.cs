@@ -1,26 +1,34 @@
 using UnityEngine;
+using Zenject;
 
-public class CursorTracker : MonoBehaviour
+namespace SkiFree2.Cursor
 {
-    private Camera _camera;
-    private float _camOffsetZ;
-
-    private static Transform _skierTransform;
-
-    public static Vector3 Direction { get; private set; }
-
-    private void Awake()
+    public class CursorTracker : MonoBehaviour
     {
-        _skierTransform = GameObject.Find("Player").transform;
+        private Camera _camera;
+        private float _camOffsetZ;
 
-        _camera = Camera.main;
-        _camOffsetZ = _camera.transform.position.z;
-    }
+        private static Transform _skierTransform;
 
-    private void FixedUpdate()
-    {
-        var cursorPos = _camera.ScreenToWorldPoint(Input.mousePosition - Vector3.one * _camOffsetZ);
+        public static Vector3 Direction { get; private set; }
 
-        Direction = Vector3.Normalize(cursorPos - _skierTransform.position);
+        [Inject]
+        public void Construct(Skier skier)
+        {
+            _skierTransform = skier.transform;
+        }
+
+        private void Awake()
+        {
+            _camera = Camera.main;
+            _camOffsetZ = _camera.transform.position.z;
+        }
+
+        private void FixedUpdate()
+        {
+            var cursorPos = _camera.ScreenToWorldPoint(Input.mousePosition - Vector3.one * _camOffsetZ);
+
+            Direction = Vector3.Normalize(cursorPos - _skierTransform.position);
+        }
     }
 }

@@ -1,61 +1,71 @@
+using SkiFree2.Cursor;
 using UnityEngine;
+using Zenject;
 
-public class WorldDriver : MonoBehaviour
+namespace SkiFree2
 {
-    [Range(1f, 50f)]
-    [SerializeField] private float maxSpeed;
-    [Range(0.01f, 1f)]
-    [SerializeField] private float acceleration;
-    [Range(0.1f, 5f)]
-    [SerializeField] private float defaultSpeed;
-
-    private Gremlin _gremlin;
-    private bool _isChased;
-
-
-    public const float BoostSpeed = 40f;
-
-    public static Vector3 Velocity { get; private set; }
-    public static float Distance;
-    public static float Speed { get; private set; }
-
-    private void Awake()
+    public class WorldDriver : MonoBehaviour
     {
-        Speed = defaultSpeed;
-        _gremlin = FindAnyObjectByType<Gremlin>();
-    }
+        [Range(1f, 50f)]
+        [SerializeField] private float maxSpeed;
+        [Range(0.01f, 1f)]
+        [SerializeField] private float acceleration;
+        [SerializeField] private AnimationCurve accelerationCurve;
+        [Range(0.1f, 5f)]
+        [SerializeField] private float defaultSpeed;
 
-    private void FixedUpdate()
-    {
-        if (Skier.IsStumbled || CursorTracker.Direction.y >= 0f)
+        private bool _isRunning;
+        private float accelerationCurveTimer;
+
+        public const float BoostSpeed = 40f;
+
+        public static Vector3 Velocity { get; private set; }
+        public static float Distance { get; private set; }
+        public static float Speed { get; private set; }
+
+        private void FixedUpdate()
         {
-            Speed = 0f;
-            Velocity = Speed * Vector2.zero;
-        }
-        else if (Skier.IsBoosted)
-        {
-            Speed = BoostSpeed;
-            Velocity = Speed * Vector2.up;
-        }
-        else
-        {
-            if (Speed < maxSpeed)
-                Speed += acceleration * Time.deltaTime;
+            if (!_isRunning)
+                return;
+
+            if (CursorTracker.Direction.y >= 0f 
+                || Skier.SpeedModifier == 0f)
+            {
+                accelerationCurveTimer = 0f;
+                Speed = 0f;
+            }
             else
-                Speed = maxSpeed;
+            {
+                if (Speed < maxSpeed)
+                {
+                    var timeSpan = Speed < defaultSpeed
+                        ? 0f : 1f;
+                    Speed += accelerationCurve.Evaluate(timeSpan) * 0.1f;
+                }
+                else
+                    Speed = maxSpeed;
+            }
 
-            Velocity = Speed * -CursorTracker.Direction;
+            Velocity = -CursorTracker.Direction * (Speed * Skier.SpeedModifier);
+            Distance += Velocity.y * Time.deltaTime;
         }
 
-        Distance += Velocity.y * Time.deltaTime;
-    }
-
-    private void LateUpdate()
-    {
-        if (!_isChased && Distance > 20f)
+        public void ResetGame()
         {
-            _isChased = true;
-            _gremlin.Chase();
+            _isRunning = false;
+            Speed = 0f;
+            Velocity = Vector3.zero;
+            Distance = 0f;
+        }
+
+        public void StartGame()
+        {
+            _isRunning = true;
+        }
+
+        public void StopGame()
+        {
+            _isRunning = false;
         }
     }
 }

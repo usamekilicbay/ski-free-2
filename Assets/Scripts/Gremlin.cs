@@ -1,49 +1,106 @@
+using SkiFree2.Abstracts;
 using UnityEngine;
+using Zenject;
 
-public enum GremlinBehaviourState
+namespace SkiFree2
 {
-    ReadyToChase,
-    Chase,
-    Disappear,
-}
-
-public class Gremlin : MonoBehaviour
-{
-    [SerializeField] private float _speed;
-
-    private Rigidbody2D _rb;
-
-    private static Transform _PlayerTransform;
-
-    private void Awake()
+    public class Gremlin : MonoBehaviour
     {
-        _PlayerTransform = GameObject.Find("Player").transform;
-        _rb = GetComponent<Rigidbody2D>();
-    }
+        [SerializeField] private float _speed;
 
-    private void Start()
-    {
-        gameObject.SetActive(false);
-    }
+        private Rigidbody2D _rb;
+        private BoxCollider2D _boxCollider;
+        private SpriteRenderer _spriteRenderer;
 
-    private void FixedUpdate()
-    {
-        if (Skier.IsDead)
-            gameObject.SetActive(false);
+        public bool isChasing { get; private set; }
 
-        var dir = Vector3.Normalize(_PlayerTransform.position - transform.position);
+        private static Transform _skierTransform;
 
-        var velocity = dir * _speed;
 
-        _rb.velocity = velocity + WorldDriver.Velocity;
-    }
+        private Skier _skier;
 
-    public void Chase()
-    {
-        var rangeX = Random.Range(-5f, 5f);
-        var spawnPos = _PlayerTransform.position + new Vector3(rangeX, 4f);
-        transform.position = spawnPos;
+        [Inject]
+        public void Construct(Skier skier)
+        {
+            _skier = skier;
+            _skierTransform = _skier.transform;
+        }
 
-        gameObject.SetActive(true);
+        private void Awake()
+        {
+            _rb = GetComponent<Rigidbody2D>();
+            _boxCollider = GetComponent<BoxCollider2D>();
+            _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        }
+
+        private void Start()
+        {
+            Vanish();
+        }
+
+        private void OnEnable()
+        {
+            _skier.OnDeath += Feast;
+        }
+
+        private void OnDisable()
+        {
+            _skier.OnDeath -= Feast;
+        }
+
+        private void FixedUpdate()
+        {
+            if (!isChasing)
+                return;
+
+            var dir = Vector3.Normalize(_skierTransform.position - transform.position);
+            var velocity = dir * _speed;
+            _rb.velocity = velocity + WorldDriver.Velocity;
+        }
+
+        private void OnTriggerEnter2D(Collider2D collision)
+        {
+            if (collision.transform.TryGetComponent(out IKillable killable))
+                killable.Kill();
+        }
+
+        public void Chase()
+        {
+            var rangeX = Random.Range(-5f, 5f);
+            var spawnPos = _skierTransform.position + new Vector3(rangeX, 4f);
+            transform.position = spawnPos;
+
+            Appear();
+        }
+
+        public void StopChasing()
+        {
+            Vanish();
+        }
+
+        public void Feast()
+        {
+            StopChasing();
+            //Play Anim
+        }
+
+        public void ResetGame()
+        {
+            Vanish();
+        }
+
+        private void Appear()
+        {
+            isChasing = true;
+            _boxCollider.enabled = true;
+            _spriteRenderer.enabled = true;
+        }
+
+        private void Vanish()
+        {
+            isChasing = false;
+            _boxCollider.enabled = false;
+            _spriteRenderer.enabled = false;
+        }
     }
 }
