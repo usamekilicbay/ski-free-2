@@ -1,3 +1,4 @@
+using Helper;
 using SkiFree2;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,19 +8,26 @@ namespace SkiFree2.Spawn
 {
     public abstract class SpawnerBase : MonoBehaviour
     {
-        [Range(1f, 50f)]
+        [Range(1f, 500f)]
         [SerializeField] private int spawnDensity;
-        [Range(0f, 10f)]
-        [SerializeField] private float spawnRate;
+        [Space(10)]
+        [Header("Offset")]
+        [SerializeField] private float horizontalOffset;
+        [SerializeField] private float topOffset;
+        [SerializeField] private float bottomOffset;
         [Space(10)]
         [SerializeField] private GameObject prefab;
         [SerializeField] private Transform spawnTransform;
 
-        private List<Rigidbody2D> _spawnedObjects;
-        private float _spawnTimer;
-        private bool _isActive;
-        private int _index = 0;
+        private float spawnBorderLeft;
+        private float spawnBorderRight;
+        private float spawnBorderTop;
+        private float spawnBorderBottom;
 
+        private List<Rigidbody2D> _spawnedObjects;
+
+        private static bool _isActive;
+        private static bool _isReseted;
         private static Transform _skierTransform;
 
         [Inject]
@@ -28,8 +36,12 @@ namespace SkiFree2.Spawn
             _skierTransform = skier.transform;
         }
 
-        private void Awake()
+        private void Start()
         {
+            spawnBorderLeft = Boundary.Left - horizontalOffset;
+            spawnBorderRight = Boundary.Right + horizontalOffset;
+            spawnBorderTop = Boundary.Bottom;
+            spawnBorderBottom = Boundary.Bottom + bottomOffset;
             Generate();
         }
 
@@ -41,25 +53,13 @@ namespace SkiFree2.Spawn
                 return;
             }
 
-            _spawnedObjects.ForEach(x => x.velocity = WorldDriver.Velocity);
-
-            if (_spawnTimer > 0f)
+            foreach (var spawnedObject in _spawnedObjects)
             {
-                _spawnTimer -= Time.deltaTime;
-                return;
+                spawnedObject.velocity = WorldDriver.Velocity;
+
+                if (spawnedObject.transform.position.y > Boundary.Top + 1f)
+                    spawnedObject.transform.position = GetRandomSpawnPos();
             }
-
-            if (_index == spawnDensity)
-                _index = 0;
-
-            var spawnedObject = _spawnedObjects[_index];
-            var spawnPos = GetRandomSpawnPos();
-
-            spawnedObject.transform.position = spawnPos;
-
-            _index++;
-
-            _spawnTimer = spawnRate;
         }
 
         private void Generate()
@@ -75,8 +75,8 @@ namespace SkiFree2.Spawn
 
         private Vector3 GetRandomSpawnPos()
         {
-            var rangeX = Random.Range(-10f, 10f);
-            var rangeY = Random.Range(-20f, -50f);
+            var rangeX = Random.Range(spawnBorderLeft, spawnBorderRight);
+            var rangeY = Random.Range(spawnBorderBottom, spawnBorderTop);
             var spawnPos = _skierTransform.position + new Vector3(rangeX, rangeY);
 
             return spawnPos;
@@ -85,6 +85,7 @@ namespace SkiFree2.Spawn
         public void ResetGame()
         {
             _isActive = false;
+            _isReseted = true;
 
             foreach (var spawnItem in _spawnedObjects)
             {
@@ -104,6 +105,24 @@ namespace SkiFree2.Spawn
         public void StopGame()
         {
             _isActive = false;
+            _isReseted = true;
+        }
+
+        private void OnDrawGizmos()
+        {
+            //var leftTopCorner = new Vector2(spawnBorderLeft, spawnBorderTop);
+            //var rightTopCorner = new Vector2(spawnBorderRight, spawnBorderTop);
+            //var rightBottomCorner = new Vector2(spawnBorderRight, spawnBorderBottom);
+            //var leftBottomCorner = new Vector2(spawnBorderLeft, spawnBorderBottom);
+
+            //Gizmos.color = Color.red;
+            //Gizmos.DrawLine(leftTopCorner, rightTopCorner);
+            //Gizmos.color = Color.cyan;
+            //Gizmos.DrawLine(rightTopCorner, rightBottomCorner);
+            //Gizmos.color = Color.black;
+            //Gizmos.DrawLine(rightBottomCorner, leftBottomCorner);
+            //Gizmos.color = Color.blue;
+            //Gizmos.DrawLine(leftBottomCorner, leftTopCorner);
         }
     }
 }

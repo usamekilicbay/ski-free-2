@@ -41,3 +41,21 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: World
+    uniqueID: 3090080409
+    locked: 0
+  - name: Environment
+    uniqueID: 1562944793
+    locked: 0
+  - name: Booster
+    uniqueID: 3373773521
+    locked: 0
+  - name: Gremlin
+    uniqueID: 512682955
+    locked: 0
+  - name: Skier
+    uniqueID: 873885057
+    locked: 0
+  - name: Obstacle
+    uniqueID: 3528999255
+    locked: 0
