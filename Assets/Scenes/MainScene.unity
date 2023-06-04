@@ -546,7 +546,7 @@ MonoBehaviour:
   spawnDensity: 90
   horizontalOffset: 0
   topOffset: 0
-  bottomOffset: -90
+  bottomOffset: -100
   prefab: {fileID: 4406481353273312008, guid: a6e91697c6275f14ab7cea4dd0b02f08, type: 3}
   spawnTransform: {fileID: 846192151}
 --- !u!4 &234994854
@@ -576,10 +576,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe7161a35c74db24d946601a812cab3e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnDensity: 5
+  spawnDensity: 6
   horizontalOffset: 0
   topOffset: 0
-  bottomOffset: -10
+  bottomOffset: -100
   prefab: {fileID: 4406481353273312008, guid: a623e33febe241940bbded2e3ee1e036, type: 3}
   spawnTransform: {fileID: 1534445171}
 --- !u!114 &234994857
